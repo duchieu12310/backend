@@ -82,4 +82,15 @@ public class JobController {
 
         return ResponseEntity.ok().body(this.jobService.fetchAll(spec, pageable));
     }
+
+    @GetMapping("/jobs/by-created/{username}")
+    @ApiMessage("Get jobs by createdBy")
+    public ResponseEntity<ResultPaginationDTO> getJobsByCreatedBy(
+            @PathVariable("username") String username,
+            Pageable pageable) {
+
+        return ResponseEntity.ok()
+                .body(this.jobService.fetchJobsByCreatedBy(username, pageable));
+    }
+
 }

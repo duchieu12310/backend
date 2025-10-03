@@ -93,13 +93,32 @@ public class DatabaseInitializer implements CommandLineRunner {
         if (countRoles == 0) {
             List<Permission> allPermissions = this.permissionRepository.findAll();
 
+            // SUPER_ADMIN role
             Role adminRole = new Role();
             adminRole.setName("SUPER_ADMIN");
             adminRole.setDescription("Admin thì full permissions");
             adminRole.setActive(true);
             adminRole.setPermissions(allPermissions);
-
             this.roleRepository.save(adminRole);
+
+            // USER_MANAGER role: chỉ có quyền update và xem user theo id
+            Role userManagerRole = new Role();
+            userManagerRole.setName("USER_MANAGER");
+            userManagerRole.setDescription("Chỉ được update và xem user theo id");
+            userManagerRole.setActive(true);
+
+            // Lấy 2 permission liên quan
+            Permission updateUser = allPermissions.get(26); // Update a user
+            Permission getUserById = allPermissions.get(28); // Get a user by id
+
+            List<Permission> userManagerPermissions = new ArrayList<>();
+            if (updateUser != null)
+                userManagerPermissions.add(updateUser);
+            if (getUserById != null)
+                userManagerPermissions.add(getUserById);
+
+            userManagerRole.setPermissions(userManagerPermissions);
+            this.roleRepository.save(userManagerRole);
         }
 
         if (countUsers == 0) {

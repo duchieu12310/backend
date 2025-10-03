@@ -22,6 +22,7 @@ import vn.dh.jobhunter.domain.response.ResCreateUserDTO;
 import vn.dh.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.dh.jobhunter.domain.response.ResUserDTO;
 import vn.dh.jobhunter.domain.response.ResultPaginationDTO;
+import vn.dh.jobhunter.domain.response.PasswordRequest.ChangePasswordByEmailRequest;
 import vn.dh.jobhunter.service.UserService;
 import vn.dh.jobhunter.util.annotation.ApiMessage;
 import vn.dh.jobhunter.util.error.IdInvalidException;
@@ -98,6 +99,29 @@ public class UserController {
             throw new IdInvalidException("User với id = " + user.getId() + " không tồn tại");
         }
         return ResponseEntity.ok(this.userService.convertToResUpdateUserDTO(ericUser));
+    }
+
+    @PutMapping("/users/change-password")
+    @ApiMessage("Change password by email")
+    public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordByEmailRequest request)
+            throws IdInvalidException {
+
+        User currentUser = this.userService.fetchUserByEmail(request.getEmail());
+        if (currentUser == null) {
+            throw new IdInvalidException("Email " + request.getEmail() + " không tồn tại");
+        }
+
+        // kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(request.getOldPassword(), currentUser.getPassword())) {
+            throw new IdInvalidException("Mật khẩu cũ không đúng");
+        }
+
+        // set mật khẩu mới
+        String hashPassword = passwordEncoder.encode(request.getNewPassword());
+        currentUser.setPassword(hashPassword);
+        this.userService.handleCreateUser(currentUser); // dùng save
+
+        return ResponseEntity.ok("Đổi mật khẩu thành công");
     }
 
 }

@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +24,8 @@ import vn.dh.jobhunter.domain.User;
 import vn.dh.jobhunter.domain.request.ReqLoginDTO;
 import vn.dh.jobhunter.domain.response.ResCreateUserDTO;
 import vn.dh.jobhunter.domain.response.ResLoginDTO;
+import vn.dh.jobhunter.domain.response.ResUpdateUserDTO;
+import vn.dh.jobhunter.domain.response.ChangePasswordRequest.ChangePasswordRequest;
 import vn.dh.jobhunter.service.UserService;
 import vn.dh.jobhunter.util.SecurityUtil;
 import vn.dh.jobhunter.util.annotation.ApiMessage;
@@ -37,7 +40,7 @@ public class AuthController {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${hoidanit.jwt.refresh-token-validity-in-seconds}")
+    @Value("${dh.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpiration;
 
     public AuthController(
@@ -215,4 +218,44 @@ public class AuthController {
         User ericUser = this.userService.handleCreateUser(postManUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToResCreateUserDTO(ericUser));
     }
+
+    @PutMapping("/auth/change-password")
+    @ApiMessage("Change user password")
+    public ResponseEntity<ResUpdateUserDTO> changePassword(
+            @RequestBody ChangePasswordRequest req) throws IdInvalidException {
+
+        String email = SecurityUtil.getCurrentUserLogin().isPresent()
+                ? SecurityUtil.getCurrentUserLogin().get()
+                : "";
+
+        if (email.equals("")) {
+            throw new IdInvalidException("Access Token không hợp lệ hoặc đã hết hạn.");
+        }
+
+        User currentUser = this.userService.handleGetUserByUsername(email);
+        if (currentUser == null) {
+            throw new IdInvalidException("Người dùng không tồn tại.");
+        }
+
+        // kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(req.getOldPassword(), currentUser.getPassword())) {
+            throw new IdInvalidException("Mật khẩu cũ không cgrghính xác.");
+        }
+
+        // kiểm tra mật khẩu mới không được trùng với mật khẩu cũ
+        if (req.getOldPassword().equals(req.getNewPassword())) {
+            throw new IdInvalidException("Mật khẩu mới không được giống mật khẩu cũ.");
+        }
+
+        // mã hóa và cập nhật mật khẩu mới
+        String newHashedPassword = passwordEncoder.encode(req.getNewPassword());
+        currentUser.setPassword(newHashedPassword);
+        currentUser = this.userService.handleUpdateUser(currentUser);
+
+        // trả về dữ liệu user đã cập nhật
+        ResUpdateUserDTO res = this.userService.convertToResUpdateUserDTO(currentUser);
+
+        return ResponseEntity.ok(res);
+    }
+
 }

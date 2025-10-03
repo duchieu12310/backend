@@ -41,10 +41,10 @@ public class SecurityUtil {
     @Value("${dh.jwt.base64-secret}")
     private String jwtKey;
 
-    @Value("${hoidanit.jwt.access-token-validity-in-seconds}")
+    @Value("${dh.jwt.access-token-validity-in-seconds}")
     private long accessTokenExpiration;
 
-    @Value("${hoidanit.jwt.refresh-token-validity-in-seconds}")
+    @Value("${dh.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpiration;
 
     public String createAccessToken(String email, ResLoginDTO dto) {

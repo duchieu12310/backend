@@ -34,6 +34,13 @@ public class JobService {
         this.companyRepository = companyRepository;
     }
 
+    public ResultPaginationDTO fetchJobsByCreatedBy(String username, Pageable pageable) {
+        Specification<Job> spec = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdBy"),
+                username);
+
+        return this.fetchAll(spec, pageable);
+    }
+
     public Optional<Job> fetchJobById(long id) {
         return this.jobRepository.findById(id);
     }
